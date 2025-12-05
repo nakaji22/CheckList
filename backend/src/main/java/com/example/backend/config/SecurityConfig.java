@@ -2,28 +2,26 @@ package com.example.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-            // CSRF は開発中は一旦無効化（あとで必要に応じて見直す）
-            .csrf(AbstractHttpConfigurer::disable)
-            // 全てのリクエストを許可
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
+                // ★ H2 コンソールも許可する
+                .requestMatchers("/api/**", "/h2-console/**").permitAll()
+                .anyRequest().authenticated()
             )
-            // デフォルトのログインフォームを無効化
-            .formLogin(AbstractHttpConfigurer::disable)
-            // Basic認証も無効化
-            .httpBasic(AbstractHttpConfigurer::disable);
+            // ★ H2 コンソールは frame を使うので、X-Frame-Options を無効化
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+            .formLogin(Customizer.withDefaults());
 
         return http.build();
     }
